@@ -2,7 +2,7 @@
   "name": "claim-power-house",
   "displayName": "Claim Power House",
   "description": "Human-in-the-loop multi-agent synthetic claim review workbench",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "claim-power-house",
   "private": true,
   "engines": { "vscode": "^1.95.0" },

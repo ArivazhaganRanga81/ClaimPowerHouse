@@ -25,8 +25,8 @@ from .database import SessionLocal, get_session
 from .models import (
     AdjudicationJob,
     AgentFinding,
-    AuthSession,
     AuditEvent,
+    AuthSession,
     BackupRecord,
     Claim,
     ClaimDiagnosis,
@@ -47,14 +47,16 @@ from .models import (
 from .schemas import (
     AuditEventView,
     ClaimDetail,
+    ClaimEnquiryRequest,
+    ClaimEnquiryResponse,
     ClaimPage,
     ClaimSummary,
     CreatePolicyRequest,
     CreatePolicyVersionRequest,
     DecisionView,
     FindingView,
-    JobView,
     ImportClaimsRequest,
+    JobView,
     LoginRequest,
     PolicyEvidence,
     PolicySearchRequest,
@@ -70,16 +72,17 @@ from .security import (
     SESSION_COOKIE,
     Principal,
     create_login_session,
+    ensure_role,
     get_principal,
     token_hash,
     verify_password,
-    ensure_role,
 )
 from .services.audit import append_audit_event
 from .services.backup import create_backup, validate_backup
 from .services.decisions import submit_decision
+from .services.llm import answer_claim_enquiry
 from .services.rag import rebuild_lexical_index, replace_policy_chunks, search_policies
-from .services.workflow import create_job, execute_job
+from .services.workflow import claim_snapshot, create_job, execute_job
 
 router = APIRouter(prefix="/api/v1")
 
@@ -94,7 +97,11 @@ def _claim_query():
 
 
 @router.post("/auth/login", response_model=UserView)
-def login(request: LoginRequest, response: Response, session: Session = Depends(get_session)) -> UserView:
+def login(
+    request: LoginRequest,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> UserView:
     user = session.scalar(select(User).where(User.email == request.email, User.active.is_(True)))
     if user is None or not verify_password(request.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -174,6 +181,62 @@ def get_claim(
     if claim is None:
         raise HTTPException(status_code=404, detail="Claim not found")
     return ClaimDetail.model_validate(claim)
+
+
+@router.post("/claims/{claim_id}/enquiries", response_model=ClaimEnquiryResponse)
+def enquire_about_claim(
+    claim_id: str,
+    request: ClaimEnquiryRequest,
+    _: Principal = Depends(get_principal),
+    session: Session = Depends(get_session),
+) -> ClaimEnquiryResponse:
+    claim = session.scalar(_claim_query().where(Claim.id == claim_id))
+    if claim is None:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    job = session.scalar(
+        select(AdjudicationJob)
+        .where(AdjudicationJob.claim_id == claim_id)
+        .order_by(AdjudicationJob.created_at.desc())
+    )
+    findings = []
+    recommendation_data = None
+    if job is not None:
+        findings = [
+            FindingView.model_validate(item).model_dump(mode="json")
+            for item in session.scalars(
+                select(AgentFinding)
+                .where(AgentFinding.job_id == job.id)
+                .order_by(AgentFinding.created_at)
+            ).all()
+        ]
+        recommendation = session.scalar(
+            select(Recommendation).where(Recommendation.job_id == job.id)
+        )
+        if recommendation is not None:
+            recommendation_data = RecommendationView.model_validate(recommendation).model_dump(
+                mode="json"
+            )
+    evidence = search_policies(
+        session,
+        query=" ".join(
+            [request.question, *(line.procedure_code for line in claim.lines)]
+        ),
+        payer_code=claim.payer_code,
+        plan_code=claim.plan_code,
+        service_date=claim.service_start,
+        limit=5,
+    )
+    try:
+        result = answer_claim_enquiry(
+            question=request.question,
+            claim=claim_snapshot(claim),
+            findings=findings,
+            recommendation=recommendation_data,
+            policy_evidence=[item.model_dump(mode="json") for item in evidence],
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)[:1200]) from exc
+    return ClaimEnquiryResponse(**result)
 
 
 @router.post("/claims/{claim_id}/adjudications", response_model=JobView, status_code=202)
@@ -270,7 +333,9 @@ async def _event_stream(job_id: str, after: int) -> AsyncIterator[str]:
                         "created_at": event.created_at.isoformat(),
                     }
                 )
-                yield f"id: {event.sequence}\nevent: {event.event_type}\ndata: {body}\n\n"
+                # Keep the event type in the JSON body. Sending named SSE events
+                # bypasses EventSource.onmessage and made the React trace look empty.
+                yield f"id: {event.sequence}\ndata: {body}\n\n"
             idle_rounds = 0 if events else idle_rounds + 1
             if (
                 job.status
@@ -369,7 +434,9 @@ def create_policy(
     session: Session = Depends(get_session),
 ) -> PolicyView:
     ensure_role(principal, "ADMINISTRATOR", "SUPERVISOR")
-    if session.scalar(select(PolicyDocument).where(PolicyDocument.policy_code == request.policy_code)):
+    if session.scalar(
+        select(PolicyDocument).where(PolicyDocument.policy_code == request.policy_code)
+    ):
         raise HTTPException(status_code=409, detail="Policy code already exists")
     policy = PolicyDocument(**request.model_dump())
     session.add(policy)

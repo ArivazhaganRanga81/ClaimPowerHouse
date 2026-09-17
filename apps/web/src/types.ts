@@ -122,3 +122,10 @@ export interface PolicyEvidence {
   score: number;
   source_uri: string | null;
 }
+
+export interface ClaimEnquiryResponse {
+  answer: string;
+  provider: string;
+  model: string;
+  citations: PolicyEvidence[];
+}

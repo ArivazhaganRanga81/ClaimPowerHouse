@@ -131,6 +131,17 @@ class RecommendationView(ApiModel):
     synthesis_error: str | None = None
 
 
+class ClaimEnquiryRequest(BaseModel):
+    question: str = Field(min_length=3, max_length=2000)
+
+
+class ClaimEnquiryResponse(BaseModel):
+    answer: str
+    provider: str
+    model: str
+    citations: list[dict[str, Any]]
+
+
 Disposition = Literal["APPROVED", "DENIED", "PENDED", "NEEDS_REVIEW"]
 RecommendationResponse = Literal["ACCEPTED", "MODIFIED", "REJECTED"]
 

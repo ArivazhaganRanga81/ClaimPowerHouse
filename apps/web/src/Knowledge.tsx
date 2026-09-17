@@ -14,6 +14,7 @@ export function Knowledge() {
   const [results, setResults] = useState<PolicyEvidence[]>([]);
   const [status, setStatus] = useState<string>();
   const [error, setError] = useState<string>();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [credentials, setCredentials] = useState({ email: "admin@example.invalid", password: "" });
 
   async function loadPolicies() {
@@ -40,6 +41,7 @@ export function Knowledge() {
     try {
       const user = await api.login(credentials.email, credentials.password);
       setStatus(`Signed in as ${user.display_name} (${user.role})`);
+      setIsAdmin(user.role === "ADMINISTRATOR" || user.role === "SUPERVISOR");
       setError(undefined);
     } catch (cause) { setError(String(cause)); }
   }
@@ -96,7 +98,7 @@ export function Knowledge() {
   return <main className="knowledge-page">
     <section className="knowledge-header">
       <div><p className="eyebrow">VERSIONED KNOWLEDGE</p><h2>Policy and RAG administration</h2></div>
-      <button onClick={() => void rebuild()}>Refresh lexical index</button>
+      <button disabled={!isAdmin} title={isAdmin ? "" : "Sign in as administrator first"} onClick={() => void rebuild()}>Refresh lexical index</button>
     </section>
     {error && <div className="error-banner">{error}</div>}
     {status && <div className="status-banner">{status}</div>}
@@ -105,6 +107,7 @@ export function Knowledge() {
       <input value={credentials.email} onChange={(e) => setCredentials({ ...credentials, email: e.target.value })} aria-label="Admin email" />
       <input type="password" value={credentials.password} placeholder="Admin password" onChange={(e) => setCredentials({ ...credentials, password: e.target.value })} aria-label="Admin password" />
       <button onClick={() => void adminLogin()}>Sign in</button>
+      <small>Demo: admin@example.invalid / DemoAdminOnly!2026</small>
     </section>
     <div className="knowledge-grid">
       <section className="card policy-list">
@@ -122,8 +125,8 @@ export function Knowledge() {
         </div>
         <label>Policy source<textarea rows={16} value={content} onChange={(e) => setContent(e.target.value)}/></label>
         <div className="actions">
-          {!draft && <button onClick={() => void createDraft()}>Create draft</button>}
-          {draft && <><button onClick={() => void saveDraft()}>Save draft</button><button className="primary" onClick={() => void publish()}>Publish</button></>}
+          {!draft && <button disabled={!isAdmin} onClick={() => void createDraft()}>Create draft</button>}
+          {draft && <><button disabled={!isAdmin} onClick={() => void saveDraft()}>Save draft</button><button disabled={!isAdmin} className="primary" onClick={() => void publish()}>Publish</button></>}
         </div>
       </section>
       <section className="card retrieval-test">

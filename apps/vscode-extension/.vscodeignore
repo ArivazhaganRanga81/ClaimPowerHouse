@@ -3,4 +3,5 @@ tsconfig.json
 **/*.map
 **/node_modules/**
 runtime/**/tests/**
-
+runtime/api/**
+runtime/**/__pycache__/**

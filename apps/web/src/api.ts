@@ -1,5 +1,6 @@
 import type {
   ClaimDetail,
+  ClaimEnquiryResponse,
   ClaimPage,
   Finding,
   Job,
@@ -16,7 +17,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) }
   });
-  if (!response.ok) throw new Error((await response.text()) || response.statusText);
+  if (!response.ok) {
+    const text = await response.text();
+    try {
+      const parsed = JSON.parse(text) as { detail?: string | { message?: string } };
+      const detail = typeof parsed.detail === "string" ? parsed.detail : parsed.detail?.message;
+      throw new Error(detail ?? response.statusText);
+    } catch (cause) {
+      if (cause instanceof SyntaxError) throw new Error(text || response.statusText);
+      throw cause;
+    }
+  }
   return response.json() as Promise<T>;
 }
 
@@ -27,6 +38,11 @@ export const api = {
   ),
   claims: () => request<ClaimPage>("/api/v1/claims"),
   claim: (id: string) => request<ClaimDetail>(`/api/v1/claims/${id}`),
+  enquire: (claimId: string, question: string) =>
+    request<ClaimEnquiryResponse>(`/api/v1/claims/${claimId}/enquiries`, {
+      method: "POST",
+      body: JSON.stringify({ question })
+    }),
   startReview: (claimId: string) =>
     request<Job>(`/api/v1/claims/${claimId}/adjudications`, {
       method: "POST",

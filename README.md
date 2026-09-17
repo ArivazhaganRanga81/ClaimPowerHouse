@@ -27,13 +27,26 @@ Open `http://127.0.0.1:8000/docs` for the API documentation.
 
 ## Web UI
 
+### Runnable local web app (OpenAI API key)
+
+The standalone web app uses the packaged backend and a separate SQLite database at
+`data/runtime-web`. It does not start or modify the VS Code extension.
+
 ```powershell
 cd apps/web
-npm install
-npm run dev
+.\run-web.ps1
+```
+
+The launcher reads the root `.env` (or `apps/web/.env`) and accepts either
+`CPH_LLM_API_KEY` or `OPENAI_API_KEY`. It does not prompt for or display the key.
+Open `http://127.0.0.1:8000/app/`.
+
+To select another model or port:
+
+```powershell
+.\run-web.ps1 -Model gpt-4.1-mini -Port 8080
 ```
 
 ## Safety boundary
 
 This build is for synthetic demonstration data only. It is not for clinical or payment use. Agents cannot approve, deny, or mutate claims; only the human decision endpoint can do so.
-

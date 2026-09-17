@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as http from "node:http";
 import * as net from "node:net";
+import * as os from "node:os";
 import * as path from "node:path";
 import { ChildProcess, spawn } from "node:child_process";
 import * as vscode from "vscode";
@@ -75,6 +76,7 @@ class RuntimeManager implements vscode.Disposable {
       CPH_LLM_PROVIDER: "codex",
       CPH_LLM_MODEL: "default",
       CPH_CODEX_PATH: codexPath,
+      CPH_CODEX_HOME: path.join(os.homedir(), ".codex"),
       CPH_AUTO_SEED: "true",
       CPH_DEMO_MODE: "true",
       PYTHONUNBUFFERED: "1"
@@ -112,7 +114,11 @@ class RuntimeManager implements vscode.Disposable {
   }
 
   private runtimeCommand(): { command: string; cwd: string; args: (port: number) => string[] } {
-    const platformName = `${process.platform}-${process.arch}`;
+    const platformName = process.platform === "win32"
+      ? `windows-${process.arch === "arm64" ? "aarch64" : "x86_64"}`
+      : process.platform === "darwin"
+        ? `macos-${process.arch === "arm64" ? "aarch64" : "x86_64"}`
+        : `linux-${process.arch === "arm64" ? "aarch64" : "x86_64"}`;
     const executableName = process.platform === "win32" ? "claim-power-house-backend.exe" : "claim-power-house-backend";
     const bundled = path.join(this.context.extensionPath, "runtime", platformName, executableName);
     if (fs.existsSync(bundled)) {

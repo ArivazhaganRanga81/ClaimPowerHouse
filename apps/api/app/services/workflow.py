@@ -181,6 +181,9 @@ def execute_job(job_id: str) -> None:
                 raise ValueError("Claim changed after the job snapshot was created")
             job.status = JobStatus.RUNNING
             emit(session, job.id, "JOB_STARTED", {})
+            # Publish the running state before doing the slower specialist and
+            # Codex work so the browser does not appear stuck in QUEUED.
+            session.commit()
 
             validation_run = _start_agent(session, job.id, "INTAKE_VALIDATION")
             validation_findings: list[AgentFinding] = []
@@ -274,6 +277,10 @@ def execute_job(job_id: str) -> None:
                     )
                 )
             _finish_agent(session, policy_run, policy_findings)
+
+            # Make the deterministic agent trace visible while synthesis runs.
+            # The Codex subprocess can legitimately take tens of seconds.
+            session.commit()
 
             all_findings = validation_findings + rule_findings + coding_findings + policy_findings
             evidence = [item.model_dump(mode="json") for item in policy_evidence]

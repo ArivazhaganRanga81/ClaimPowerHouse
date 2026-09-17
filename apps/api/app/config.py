@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     llm_model: str = "default"
     llm_api_key: str | None = None
     codex_path: str = "codex"
+    codex_home: Path | None = None
     codex_timeout_seconds: int = Field(default=90, ge=10, le=300)
     session_secret: str = "development-only-secret"
     sidecar_token: str | None = None

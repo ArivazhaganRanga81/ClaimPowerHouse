@@ -28,6 +28,7 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
 .header-actions > button { color: white; background: transparent; border: 1px solid #55717f; border-radius: 5px; padding: 8px 11px; }
 .error-banner { padding: 12px 30px; background: #8d2028; color: #fff; }
+.global-status { margin: 0; border-width: 0 0 1px; }
 
 .workspace { display: grid; grid-template-columns: 310px 1fr; min-height: calc(100vh - 96px); }
 .queue { background: #f8fafb; border-right: 1px solid #cedae0; }
@@ -115,6 +116,24 @@ textarea { border: 1px solid #9fb1ba; border-radius: 5px; padding: 9px; resize: 
 .editor-meta label, .policy-editor > label { display: grid; gap: 5px; margin: 10px 0; font-size: 12px; font-weight: 700; }
 .retrieval-test > div { display: flex; gap: 8px; }
 .retrieval-test input { flex: 1; }
+
+.enquiry .panel-title > div { display: grid; gap: 4px; }
+.enquiry h3 { margin: 0; }
+.quick-questions { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
+.quick-questions button {
+  background: #eef7f5; color: #125e53; border: 1px solid #9bcfc5;
+  border-radius: 18px; padding: 7px 11px;
+}
+.conversation { display: grid; gap: 10px; max-height: 420px; overflow: auto; margin: 12px 0; }
+.message { max-width: 86%; border-radius: 8px; padding: 11px 13px; }
+.message p { white-space: pre-wrap; margin: 5px 0; }
+.message-user { justify-self: end; background: #dff4ef; }
+.message-assistant { justify-self: start; background: #f0f4f6; border-left: 3px solid #149c86; }
+.message small { color: #5f7480; }
+.message-citations { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.message-citations small { background: white; border-radius: 12px; padding: 3px 7px; }
+.enquiry-input { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 9px; }
+.enquiry-input textarea { width: 100%; }
 
 @media (max-width: 900px) {
   body { min-width: 0; }
