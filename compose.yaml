@@ -1,0 +1,16 @@
+services:
+  claim-power-house:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      CPH_DEMO_MODE: "true"
+      CPH_LLM_PROVIDER: "stub"
+      CPH_ALLOWED_ORIGINS: "http://localhost:8000"
+    volumes:
+      - claim-power-house-data:/data
+    restart: unless-stopped
+
+volumes:
+  claim-power-house-data:
+

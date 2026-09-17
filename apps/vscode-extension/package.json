@@ -1,0 +1,65 @@
+{
+  "name": "claim-power-house",
+  "displayName": "Claim Power House",
+  "description": "Human-in-the-loop multi-agent synthetic claim review workbench",
+  "version": "0.1.1",
+  "publisher": "claim-power-house",
+  "private": true,
+  "engines": { "vscode": "^1.95.0" },
+  "categories": ["Other", "Machine Learning"],
+  "activationEvents": [
+    "onView:claimPowerHouse.queue",
+    "onCommand:claimPowerHouse.open",
+    "onCommand:claimPowerHouse.start",
+    "onCommand:claimPowerHouse.stop"
+  ],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "package": "npm run compile && vsce package",
+    "test": "node ./dist/test/runTest.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.8.0"
+  },
+  "contributes": {
+    "commands": [
+      { "command": "claimPowerHouse.open", "title": "Claim Power House: Open Workbench" },
+      { "command": "claimPowerHouse.start", "title": "Claim Power House: Start Local Runtime" },
+      { "command": "claimPowerHouse.stop", "title": "Claim Power House: Stop Local Runtime" },
+      { "command": "claimPowerHouse.showLogs", "title": "Claim Power House: Show Logs" }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "claimPowerHouse", "title": "Claim Power House", "icon": "resources/icon.svg" }
+      ]
+    },
+    "views": {
+      "claimPowerHouse": [
+        { "id": "claimPowerHouse.queue", "name": "Claims" }
+      ]
+    },
+    "configuration": {
+      "title": "Claim Power House",
+      "properties": {
+        "claimPowerHouse.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Development fallback Python executable. Release VSIX packages use the bundled runtime."
+        },
+        "claimPowerHouse.backendPort": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 65535,
+          "description": "Loopback backend port; zero selects a free port."
+        }
+      }
+    }
+  }
+}
